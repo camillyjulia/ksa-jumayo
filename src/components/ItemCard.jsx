@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Gift, ExternalLink, Lock, Users, Sparkles } from 'lucide-react'
-import { brl, priceRange, isTaken } from '../lib/utils'
+import { brl, priceTier, isTaken, RANGES } from '../lib/utils'
 import ColorDot from './ColorDot'
 import useItemImage from '../lib/useItemImage'
 import { CATEGORY_LABELS } from '../messages'
@@ -47,7 +47,7 @@ function Badge({ item }) {
 }
 
 export default function ItemCard({ item, onGift }) {
-  const { min, max } = priceRange(item)
+  const tier = priceTier(item)
   const taken = isTaken(item)
   const image = useItemImage(item)
 
@@ -61,7 +61,7 @@ export default function ItemCard({ item, onGift }) {
       <p className="mt-1 text-sm text-neutral-500">{item.description}</p>
       <div className="mt-3 flex gap-1.5">{item.colors.map((c) => <ColorDot key={c} color={c} />)}</div>
       <p className="mt-3 text-lg font-bold text-neutral-900">
-        {min === max ? brl(min) : `${brl(min)} – ${brl(max)}`}
+        {tier == null ? 'Preço a definir' : RANGES[tier].label}
       </p>
 
       {!taken && (
@@ -72,7 +72,7 @@ export default function ItemCard({ item, onGift }) {
               className="flex items-center justify-between rounded-lg border border-neutral-200 px-3 py-2 text-sm transition hover:border-violet-300 hover:bg-violet-50"
             >
               <span className="flex items-center gap-1.5">{l.store} <ExternalLink size={13} className="text-neutral-400" /></span>
-              <span className="font-medium">{brl(l.price)}</span>
+              {l.price != null && <span className="font-medium">{brl(l.price)}</span>}
             </a>
           ))}
         </div>

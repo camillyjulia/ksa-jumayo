@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { SearchX, Loader2, TriangleAlert } from 'lucide-react'
 import { fetchWishlist, reserveItem } from './lib/api'
-import { RANGES, priceRange } from './lib/utils'
+import { priceRange, priceTier } from './lib/utils'
 import Header from './components/Header'
 import RoomTabs from './components/RoomTabs'
 import Filters from './components/Filters'
@@ -48,14 +48,12 @@ export default function App() {
 
   const visible = useMemo(() => {
     let list = roomItems.filter((i) => {
-      const { min } = priceRange(i)
       const okColor = !color || i.colors.includes(color)
-      const okPrice =
-        selected.length === 0 || selected.some((idx) => min >= RANGES[idx].min && min < RANGES[idx].max)
+      const okPrice = selected.length === 0 || selected.includes(priceTier(i))
       return okColor && okPrice
     })
-    if (sort === 'menor') list = [...list].sort((a, b) => priceRange(a).min - priceRange(b).min)
-    if (sort === 'maior') list = [...list].sort((a, b) => priceRange(b).min - priceRange(a).min)
+    if (sort === 'menor') list = [...list].sort((a, b) => (priceRange(a).min ?? Infinity) - (priceRange(b).min ?? Infinity))
+    if (sort === 'maior') list = [...list].sort((a, b) => (priceRange(b).min ?? -1) - (priceRange(a).min ?? -1))
     return list
   }, [data, roomId, color, selected, sort])
 

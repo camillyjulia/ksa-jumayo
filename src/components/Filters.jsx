@@ -8,6 +8,7 @@ const chip = (on) =>
 export default function Filters({ colors, color, onColor, selected, onToggleRange, onClearRanges, sort, onSort }) {
   return (
     <section className="mb-6 rounded-2xl bg-violet-50 p-4">
+      {colors.length > 0 && (
       <div className="flex flex-wrap items-center gap-2">
         <span className="mr-1 text-sm font-medium">Cor</span>
         <button onClick={() => onColor('')} className={chip(!color)}>Todas</button>
@@ -17,8 +18,9 @@ export default function Filters({ colors, color, onColor, selected, onToggleRang
           </button>
         ))}
       </div>
+      )}
 
-      <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2">
+      <div className={`${colors.length > 0 ? 'mt-4 ' : ''}flex flex-wrap items-center gap-x-5 gap-y-2`}>
         <span className="text-sm font-medium">Valor</span>
         <Checkbox checked={selected.length === 0} onChange={onClearRanges}>Todos</Checkbox>
         {RANGES.map((r, idx) => (
