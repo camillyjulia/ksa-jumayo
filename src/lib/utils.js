@@ -17,4 +17,4 @@ export function priceRange(item) {
   return { min: Math.min(...prices), max: Math.max(...prices) }
 }
 
-export const isTaken = (item) => (item.givers || []).length > 0
+export const isTaken = (item) => item.giver_count > 0

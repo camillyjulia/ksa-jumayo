@@ -21,6 +21,8 @@ export default function GiftModal({ item, onClose, onConfirm }) {
   const [mode, setMode] = useState('solo') // 'solo' | 'group'
   const [others, setOthers] = useState([''])
   const [done, setDone] = useState(null)
+  const [sending, setSending] = useState(false)
+  const [error, setError] = useState('')
 
   const cleanOthers = others.map((o) => o.trim()).filter(Boolean)
   const valid = name.trim().length > 1 && (mode === 'solo' || cleanOthers.length > 0)
@@ -28,10 +30,19 @@ export default function GiftModal({ item, onClose, onConfirm }) {
   const setOther = (i, v) => setOthers((o) => o.map((x, idx) => (idx === i ? v : x)))
   const removeOther = (i) => setOthers((o) => (o.length === 1 ? [''] : o.filter((_, idx) => idx !== i)))
 
-  const confirm = () => {
+  const confirm = async () => {
     const names = [name.trim(), ...(mode === 'group' ? cleanOthers : [])]
-    onConfirm(item.id, names)
-    setDone({ names, message: whatsappMessage(item, names) })
+    setSending(true)
+    setError('')
+    try {
+      const ok = await onConfirm(item.id, names)
+      if (ok) setDone({ names, message: whatsappMessage(item, names) })
+      else setError('Ops! Alguém acabou de reservar esse item. Escolhe outro, por favor.')
+    } catch {
+      setError('Não deu certo. Tenta de novo em instantes.')
+    } finally {
+      setSending(false)
+    }
   }
 
   return (
@@ -74,11 +85,13 @@ export default function GiftModal({ item, onClose, onConfirm }) {
               </div>
             )}
 
+            {error && <p className="text-sm text-red-600">{error}</p>}
+
             <button
-              disabled={!valid} onClick={confirm}
+              disabled={!valid || sending} onClick={confirm}
               className="w-full rounded-xl bg-neutral-900 py-3 font-medium text-white transition hover:bg-neutral-700 disabled:cursor-not-allowed disabled:bg-neutral-300"
             >
-              Confirmar
+              {sending ? 'Reservando...' : 'Confirmar'}
             </button>
           </div>
         ) : (

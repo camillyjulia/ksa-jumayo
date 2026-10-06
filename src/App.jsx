@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react'
-import { SearchX } from 'lucide-react'
-import { rooms, items as initialItems } from './data'
+import { useEffect, useMemo, useState } from 'react'
+import { SearchX, Loader2, TriangleAlert } from 'lucide-react'
+import { fetchWishlist, reserveItem } from './lib/api'
 import { RANGES, priceRange } from './lib/utils'
 import Header from './components/Header'
 import RoomTabs from './components/RoomTabs'
@@ -9,12 +9,29 @@ import ItemCard from './components/ItemCard'
 import GiftModal from './components/GiftModal'
 
 export default function App() {
-  const [data, setData] = useState(initialItems)
-  const [roomId, setRoomId] = useState(rooms[0].id)
+  const [rooms, setRooms] = useState([])
+  const [data, setData] = useState([])
+  const [status, setStatus] = useState('loading') // 'loading' | 'ready' | 'error'
+  const [roomId, setRoomId] = useState(null)
   const [color, setColor] = useState('')
   const [selected, setSelected] = useState([]) // vazio = mostra todos os valores
   const [sort, setSort] = useState('padrao')
   const [giftId, setGiftId] = useState(null)
+
+  const load = async () => {
+    try {
+      const { rooms: r, items: it } = await fetchWishlist()
+      setRooms(r)
+      setData(it)
+      setRoomId((cur) => cur ?? r[0]?.id ?? null)
+      setStatus('ready')
+    } catch (e) {
+      console.error(e)
+      setStatus('error')
+    }
+  }
+
+  useEffect(() => { load() }, [])
 
   const roomItems = data.filter((i) => i.room_id === roomId)
   const colors = [...new Set(roomItems.flatMap((i) => i.colors))]
@@ -22,8 +39,12 @@ export default function App() {
   const toggleRange = (idx) =>
     setSelected((s) => (s.includes(idx) ? s.filter((x) => x !== idx) : [...s, idx]))
 
-  const reserveItem = (id, names) =>
-    setData((d) => d.map((i) => (i.id === id ? { ...i, givers: names } : i)))
+  const handleReserve = async (id, names) => {
+    const ok = await reserveItem(id, names)
+    if (ok) setData((d) => d.map((i) => (i.id === id ? { ...i, giver_count: names.length } : i)))
+    else load() // alguém reservou antes: atualiza a lista
+    return ok
+  }
 
   const visible = useMemo(() => {
     let list = roomItems.filter((i) => {
@@ -43,28 +64,54 @@ export default function App() {
   return (
     <div className="min-h-screen bg-white text-neutral-900">
       <Header />
-      <RoomTabs rooms={rooms} roomId={roomId} onSelect={(id) => { setRoomId(id); setColor('') }} />
+      {status === 'ready' && (
+        <RoomTabs rooms={rooms} roomId={roomId} onSelect={(id) => { setRoomId(id); setColor('') }} />
+      )}
 
       <main className="mx-auto max-w-5xl px-4 py-6">
-        <Filters
-          colors={colors} color={color} onColor={setColor}
-          selected={selected} onToggleRange={toggleRange} onClearRanges={() => setSelected([])}
-          sort={sort} onSort={setSort}
-        />
-
-        {visible.length === 0 ? (
+        {status === 'loading' && (
           <div className="flex flex-col items-center gap-3 py-16 text-neutral-500">
-            <SearchX size={40} strokeWidth={1.5} />
-            <p>Nenhum item com esses filtros</p>
+            <Loader2 size={32} className="animate-spin" />
+            <p>Carregando a lista...</p>
           </div>
-        ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {visible.map((i) => <ItemCard key={i.id} item={i} onGift={(it) => setGiftId(it.id)} />)}
+        )}
+
+        {status === 'error' && (
+          <div className="flex flex-col items-center gap-3 py-16 text-neutral-600">
+            <TriangleAlert size={36} strokeWidth={1.5} />
+            <p>Não consegui carregar a lista.</p>
+            <button
+              onClick={() => { setStatus('loading'); load() }}
+              className="rounded-xl bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-700"
+            >
+              Tentar de novo
+            </button>
           </div>
+        )}
+
+        {status === 'ready' && (
+          <>
+            <Filters
+              colors={colors} color={color} onColor={setColor}
+              selected={selected} onToggleRange={toggleRange} onClearRanges={() => setSelected([])}
+              sort={sort} onSort={setSort}
+            />
+
+            {visible.length === 0 ? (
+              <div className="flex flex-col items-center gap-3 py-16 text-neutral-500">
+                <SearchX size={40} strokeWidth={1.5} />
+                <p>Nenhum item com esses filtros</p>
+              </div>
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {visible.map((i) => <ItemCard key={i.id} item={i} onGift={(it) => setGiftId(it.id)} />)}
+              </div>
+            )}
+          </>
         )}
       </main>
 
-      {giftItem && <GiftModal key={giftItem.id} item={giftItem} onClose={() => setGiftId(null)} onConfirm={reserveItem} />}
+      {giftItem && <GiftModal key={giftItem.id} item={giftItem} onClose={() => setGiftId(null)} onConfirm={handleReserve} />}
     </div>
   )
 }
