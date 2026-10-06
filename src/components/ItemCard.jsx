@@ -1,14 +1,22 @@
 import { useState } from 'react'
-import { Gift, ExternalLink, Lock, Users } from 'lucide-react'
+import { Gift, ExternalLink, Lock, Users, Sparkles } from 'lucide-react'
 import { brl, priceRange, isTaken } from '../lib/utils'
 import ColorDot from './ColorDot'
+import useItemImage from '../lib/useItemImage'
+import { CATEGORY_LABELS } from '../messages'
+
+const CATEGORY_STYLE = {
+  essencial: 'bg-neutral-900 text-white',
+  gostariamos: 'bg-violet-100 text-neutral-800',
+  aura: 'bg-white text-violet-700 ring-1 ring-violet-400',
+}
 
 function ItemImage({ src }) {
   const [failed, setFailed] = useState(false)
   return (
     <div className="mb-3 flex h-36 items-center justify-center overflow-hidden rounded-xl bg-violet-100 text-violet-400">
       {src && !failed ? (
-        <img src={src} alt="" loading="lazy" onError={() => setFailed(true)} className="h-full w-full object-cover" />
+        <img src={src} alt="" loading="lazy" referrerPolicy="no-referrer" onError={() => setFailed(true)} className="h-full w-full object-cover" />
       ) : (
         <Gift size={44} strokeWidth={1.5} />
       )}
@@ -18,7 +26,7 @@ function ItemImage({ src }) {
 
 function Badge({ item }) {
   if (isTaken(item)) {
-    return item.givers.length > 1 ? (
+    return item.giver_count > 1 ? (
       <span className="flex items-center gap-1 whitespace-nowrap rounded-full bg-violet-600 px-2 py-0.5 text-xs text-white">
         <Users size={12} /> reservado em grupo
       </span>
@@ -28,18 +36,24 @@ function Badge({ item }) {
       </span>
     )
   }
-  return item.priority === 'essencial' ? (
-    <span className="rounded-full bg-neutral-900 px-2 py-0.5 text-xs text-white">essencial</span>
-  ) : null
+  const label = CATEGORY_LABELS[item.priority]
+  if (!label) return null
+  return (
+    <span className={`flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-xs ${CATEGORY_STYLE[item.priority]}`}>
+      {item.priority === 'aura' && <Sparkles size={12} />}
+      {label}
+    </span>
+  )
 }
 
 export default function ItemCard({ item, onGift }) {
   const { min, max } = priceRange(item)
   const taken = isTaken(item)
+  const image = useItemImage(item)
 
   return (
     <article className={`flex flex-col rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm ${taken ? 'opacity-60' : ''}`}>
-      <ItemImage src={item.image_url} />
+      <ItemImage key={image} src={image} />
       <div className="flex items-start justify-between gap-2">
         <h3 className="font-semibold text-neutral-900">{item.name}</h3>
         <Badge item={item} />
