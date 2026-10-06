@@ -12,9 +12,19 @@ export const RANGES = [
 
 export const brl = (n) => n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 
+// Faixa do item (price_min/max). Se não tiver, usa os preços dos links. Sem nada: null.
 export function priceRange(item) {
-  const prices = item.links.map((l) => l.price).filter(Boolean)
-  return { min: Math.min(...prices), max: Math.max(...prices) }
+  if (item.price_min != null) {
+    return { min: Number(item.price_min), max: Number(item.price_max ?? item.price_min) }
+  }
+  const prices = (item.links || []).map((l) => l.price).filter((p) => p != null)
+  return prices.length ? { min: Math.min(...prices), max: Math.max(...prices) } : { min: null, max: null }
+}
+
+export function priceTier(item) {
+  const { min } = priceRange(item)
+  if (min == null) return null
+  return RANGES.findIndex((r) => min >= r.min && min < r.max)
 }
 
 export const isTaken = (item) => item.giver_count > 0
