@@ -3,9 +3,9 @@ import { brl } from './lib/utils'
 const HOST_WHATSAPP = import.meta.env.VITE_HOST_WHATSAPP
 
 export const SITE = {
-  title: 'Chá de Casa Nova',
-  couple: 'Jubs, M.A e Yoseph <3',
-  date: '24/10/2026',
+  title: 'Chá de Kasa Nova',
+  couple: 'Júlia, M.A e Yoseph <3',
+  date: '20/10/2026',
   place: 'Porto Alegre',
 }
 
