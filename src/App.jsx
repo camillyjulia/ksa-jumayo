@@ -15,6 +15,7 @@ export default function App() {
   const [roomId, setRoomId] = useState(null)
   const [color, setColor] = useState('')
   const [selected, setSelected] = useState([]) // vazio = mostra todos os valores
+  const [cats, setCats] = useState([]) // vazio = mostra todas as categorias
   const [sort, setSort] = useState('padrao')
   const [giftId, setGiftId] = useState(null)
 
@@ -39,6 +40,9 @@ export default function App() {
   const toggleRange = (idx) =>
     setSelected((s) => (s.includes(idx) ? s.filter((x) => x !== idx) : [...s, idx]))
 
+  const toggleCat = (key) =>
+    setCats((c) => (c.includes(key) ? c.filter((x) => x !== key) : [...c, key]))
+
   const handleReserve = async (id, names) => {
     const ok = await reserveItem(id, names)
     if (ok) setData((d) => d.map((i) => (i.id === id ? { ...i, giver_count: names.length } : i)))
@@ -50,12 +54,13 @@ export default function App() {
     let list = roomItems.filter((i) => {
       const okColor = !color || i.colors.includes(color)
       const okPrice = selected.length === 0 || selected.includes(priceTier(i))
-      return okColor && okPrice
+      const okCat = cats.length === 0 || cats.includes(i.priority)
+      return okColor && okPrice && okCat
     })
     if (sort === 'menor') list = [...list].sort((a, b) => (priceRange(a).min ?? Infinity) - (priceRange(b).min ?? Infinity))
     if (sort === 'maior') list = [...list].sort((a, b) => (priceRange(b).min ?? -1) - (priceRange(a).min ?? -1))
     return list
-  }, [data, roomId, color, selected, sort])
+  }, [data, roomId, color, selected, cats, sort])
 
   const giftItem = data.find((i) => i.id === giftId)
 
@@ -91,8 +96,10 @@ export default function App() {
           <>
             <Filters
               colors={colors} color={color} onColor={setColor}
+              cats={cats} onToggleCat={toggleCat} onClearCats={() => setCats([])}
               selected={selected} onToggleRange={toggleRange} onClearRanges={() => setSelected([])}
               sort={sort} onSort={setSort}
+              onClearAll={() => { setCats([]); setSelected([]); setColor('') }}
             />
 
             {visible.length === 0 ? (
